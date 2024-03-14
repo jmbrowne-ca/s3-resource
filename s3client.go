@@ -114,17 +114,6 @@ func NewAwsConfig(
 	disableSSL bool,
 	skipSSLVerification bool,
 ) *aws.Config {
-	var creds *credentials.Credentials
-
-	if accessKey == "" && secretKey == "" {
-		creds = credentials.AnonymousCredentials
-	} else {
-		creds = credentials.NewStaticCredentials(accessKey, secretKey, sessionToken)
-	}
-
-	if len(regionName) == 0 {
-		regionName = "us-east-1"
-	}
 
 	var httpClient *http.Client
 	if skipSSLVerification {
@@ -137,13 +126,22 @@ func NewAwsConfig(
 
 	awsConfig := &aws.Config{
 		Region:           aws.String(regionName),
-		Credentials:      creds,
 		S3ForcePathStyle: aws.Bool(true),
 		MaxRetries:       aws.Int(maxRetries),
 		DisableSSL:       aws.Bool(disableSSL),
 		HTTPClient:       httpClient,
 	}
 
+	if accessKey != "" && secretKey != "" {
+		awsConfig.Credentials = credentials.NewStaticCredentials(accessKey, secretKey, sessionToken)
+	} else {
+		println("Using default credential chain for authentication.")
+	}
+
+	if len(regionName) == 0 {
+		regionName = "us-east-1"
+	}
+	
 	if len(endpoint) != 0 {
 		endpoint := fmt.Sprintf("%s", endpoint)
 		awsConfig.Endpoint = &endpoint
